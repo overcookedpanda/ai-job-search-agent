@@ -123,8 +123,11 @@ async function analyzeJobSkills(jobDescription) {
       
       For the output:
       1. First identify the job title
-      2. Then provide the skills as a structured list separated by type
-      3. Separate required from preferred skills
+      2. Then organize skills into these categories:
+         - Technical Skills (programming languages, tools, technologies)
+         - Soft Skills (interpersonal, communication, etc.)
+         - Education and Experience (degrees, years of experience, etc.)
+      3. List any preferred skills separately
       
       Format the output as a JSON object with this structure:
       {

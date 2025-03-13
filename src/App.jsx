@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import axios from 'axios';
-import JobSkillsForm from './components/JobSkillsForm';
-import SkillsResults from './components/SkillsResults';
-import LoadingSpinner from './components/LoadingSpinner';
 import './App.css';
+import JobResearch from './components/JobResearch';
+import LoadingSpinner from './components/LoadingSpinner';
+import SkillsResults from './components/SkillsResults';
 
 // Use environment variable for API URL with fallback
 const API_URL = import.meta.env.VITE_API_URL || '/.netlify/functions/job-search';
@@ -16,27 +16,9 @@ function App() {
   const analyzeJobPosting = async (url) => {
     setIsLoading(true);
     setError(null);
+    setJobSkills(null);
 
     try {
-      // For development/testing without a backend
-      // Uncomment this block to use mock data instead of making API calls
-      /*
-      setTimeout(() => {
-        setJobSkills({
-          job_title: "AI Automation Engineer",
-          required_skills: {
-            technical_skills: [".NET/.NET Core", "Web/REST APIs", "Microsoft Copilot Studio", "PowerAutomate"],
-            soft_skills: ["Strong analytical and communication skills", "Innovative problem solving"],
-            education: ["Degree in Computer Science or related field"],
-            experience: ["2+ years with .NET/.NET Core"]
-          },
-          preferred_skills: ["Legal industry knowledge", "Agile methodology"]
-        });
-        setIsLoading(false);
-      }, 2000);
-      return;
-      */
-
       const response = await axios.post(API_URL, { url });
       setJobSkills(response.data);
     } catch (err) {
@@ -50,13 +32,15 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <header className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600 mb-2">Job Skills Analyzer</h1>
-          <p className="text-gray-600">Extract required skills from job postings to better prepare for applications</p>
+        <header className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">AI Interview Preparation</h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Research roles, practice interviews, and get personalized feedback to ace your next tech interview.
+          </p>
         </header>
 
         <main>
-          <JobSkillsForm onSubmit={analyzeJobPosting} isLoading={isLoading} />
+          <JobResearch onSubmit={analyzeJobPosting} isLoading={isLoading} />
 
           {isLoading && <LoadingSpinner />}
 
@@ -71,7 +55,7 @@ function App() {
         </main>
 
         <footer className="mt-12 text-center text-gray-500 text-sm">
-          <p>© {new Date().getFullYear()} Job Skills Analyzer</p>
+          <p>© {new Date().getFullYear()} Overcooked Panda</p>
         </footer>
       </div>
     </div>
