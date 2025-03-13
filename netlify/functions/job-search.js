@@ -28,25 +28,51 @@ exports.handler = async function(event, context) {
 
     // Fetch job posting
     console.log(`Fetching job posting from: ${url}`);
-    const jobDescription = await fetchJobDescription(url);
 
-    if (!jobDescription) {
+    try {
+      const jobDescription = await fetchJobDescription(url);
+
+      if (!jobDescription) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Could not extract job description from the provided URL' })
+        };
+      }
+
+      // Analyze job description
+      console.log('Analyzing job description...');
+      const skills = await analyzeJobSkills(jobDescription);
+
       return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Could not extract job description from the provided URL' })
+        statusCode: 200,
+        body: JSON.stringify(skills)
+      };
+    } catch (fetchError) {
+      console.error('Detailed fetch error:', {
+        message: fetchError.message,
+        stack: fetchError.stack,
+        response: fetchError.response ? {
+          status: fetchError.response.status,
+          statusText: fetchError.response.statusText,
+          headers: fetchError.response.headers,
+          data: fetchError.response.data
+        } : 'No response data'
+      });
+
+      return {
+        statusCode: 500,
+        body: JSON.stringify({
+          error: 'Failed to fetch job description',
+          details: fetchError.message,
+          url: url
+        })
       };
     }
-
-    // Analyze job description
-    console.log('Analyzing job description...');
-    const skills = await analyzeJobSkills(jobDescription);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify(skills)
-    };
   } catch (error) {
-    console.error('Error processing job analysis:', error);
+    console.error('General error processing job analysis:', {
+      message: error.message,
+      stack: error.stack
+    });
 
     return {
       statusCode: 500,
@@ -60,33 +86,60 @@ exports.handler = async function(event, context) {
 
 async function fetchJobDescription(url) {
   try {
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
+    console.log('Making request with headers:', {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml',
+      'Accept-Language': 'en-US,en;q=0.9',
     });
 
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      timeout: 10000 // 10 seconds timeout
+    });
+
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
+
     const html = response.data;
+    console.log('HTML length:', html.length);
+
+    // Log a sample of the HTML to see what we're working with
+    console.log('HTML sample:', html.substring(0, 300) + '...');
+
     const $ = cheerio.load(html);
 
     // Try to extract from JSON-LD
     let jobDescription = '';
-    $('script[type="application/ld+json"]').each((_, el) => {
+    const jsonLdScripts = $('script[type="application/ld+json"]');
+    console.log(`Found ${jsonLdScripts.length} JSON-LD scripts`);
+
+    jsonLdScripts.each((_, el) => {
       try {
-        const data = JSON.parse($(el).html());
+        const scriptContent = $(el).html();
+        console.log('JSON-LD content sample:', scriptContent.substring(0, 200) + '...');
+
+        const data = JSON.parse(scriptContent);
         if (data['@type'] === 'JobPosting' && data.description) {
+          console.log('Found job description in JSON-LD!');
           jobDescription = data.description;
           return false; // Break the loop
         }
       } catch (e) {
-        // Continue if JSON parsing fails
+        console.error('Error parsing JSON-LD:', e.message);
       }
     });
 
     // If not found in JSON-LD, try meta tags
     if (!jobDescription) {
       const meta = $('meta[property="og:description"]').attr('content');
-      if (meta) jobDescription = meta;
+      if (meta) {
+        console.log('Found job description in meta tags');
+        jobDescription = meta;
+      }
     }
 
     // If still not found, try common job description containers
@@ -97,8 +150,10 @@ async function fetchJobDescription(url) {
       ];
 
       for (const selector of selectors) {
-        if ($(selector).length) {
-          jobDescription = $(selector).text();
+        const elements = $(selector);
+        if (elements.length) {
+          console.log(`Found ${elements.length} elements with selector: ${selector}`);
+          jobDescription = elements.text();
           break;
         }
       }
@@ -106,18 +161,32 @@ async function fetchJobDescription(url) {
 
     // If still nothing, get the whole body text as fallback
     if (!jobDescription) {
+      console.log('No specific job description found, using body text');
       jobDescription = $('body').text();
     }
 
+    console.log('Extracted job description length:', jobDescription.length);
+    console.log('Job description sample:', jobDescription.substring(0, 200) + '...');
+
     return jobDescription.trim();
   } catch (error) {
-    console.error('Error fetching job description:', error);
-    throw new Error(`Failed to fetch job description: ${error.message}`);
+    console.error('Error fetching job description:', {
+      message: error.message,
+      stack: error.stack,
+      response: error.response ? {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        headers: error.response.headers
+      } : 'No response'
+    });
+
+    throw error;
   }
 }
 
 async function analyzeJobSkills(jobDescription) {
   try {
+    console.log('Starting OpenAI analysis');
     const prompt = `
       Extract the required skills from the following job description.
       
@@ -161,26 +230,36 @@ async function analyzeJobSkills(jobDescription) {
     });
 
     const content = response.choices[0].message.content.trim();
+    console.log('OpenAI response received, length:', content.length);
+    console.log('Response sample:', content.substring(0, 200) + '...');
 
     try {
       // Try to parse JSON directly
       return JSON.parse(content);
     } catch (e) {
+      console.error('Error parsing OpenAI response as JSON:', e.message);
+
       // If direct parsing fails, try to extract JSON from text
       const jsonMatch = content.match(/{[\s\S]*}/);
       if (jsonMatch) {
         try {
+          console.log('Found JSON pattern in response, attempting to parse');
           return JSON.parse(jsonMatch[0]);
         } catch (e2) {
+          console.error('Error parsing extracted JSON pattern:', e2.message);
           // If all parsing fails, return raw text
           return { raw_output: content };
         }
       } else {
+        console.log('No JSON pattern found in response, returning raw output');
         return { raw_output: content };
       }
     }
   } catch (error) {
-    console.error('Error analyzing job skills with OpenAI:', error);
-    throw new Error(`Failed to analyze job skills: ${error.message}`);
+    console.error('Error analyzing job skills with OpenAI:', {
+      message: error.message,
+      stack: error.stack
+    });
+    throw error;
   }
 }
