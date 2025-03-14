@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function JobResearch({ onSubmit, isLoading }) {
+export default function JobResearch({ onSubmit, isLoading, disabled }) {
   const [jobUrl, setJobUrl] = useState('');
   const [urlError, setUrlError] = useState('');
 
@@ -85,6 +85,7 @@ export default function JobResearch({ onSubmit, isLoading }) {
             placeholder="Enter job listing URL"
             className={`w-full pl-10 pr-4 py-3 border ${urlError ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 ${urlError ? 'focus:ring-red-500 focus:border-red-500' : 'focus:ring-mint-500 focus:border-mint-500'}`}
             required
+            disabled={disabled || isLoading}
           />
         </div>
 
@@ -96,10 +97,10 @@ export default function JobResearch({ onSubmit, isLoading }) {
 
         <button
           type="submit"
-          disabled={isLoading || !jobUrl.trim()}
+          disabled={isLoading || !jobUrl.trim() || disabled}
           className="w-full py-3 px-4 bg-mint-600 hover:bg-mint-700 text-green-950 font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-300 disabled:opacity-50 transition duration-200 shadow-sm"
         >
-          {isLoading ? 'Analyzing...' : 'Analyze Job Listing'}
+          {isLoading ? 'Analyzing...' : disabled ? 'Waiting for backend...' : 'Analyze Job Listing'}
         </button>
       </form>
 

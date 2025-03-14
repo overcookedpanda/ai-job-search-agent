@@ -236,10 +236,13 @@ def analyze_job():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/test', methods=['GET'])
-def test():
-    """A simple endpoint to test if the API is working"""
-    return jsonify({"message": "API is working!"}), 200
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Simple health check endpoint to wake up the backend"""
+    return jsonify({
+        "status": "online",
+        "message": "Backend is ready"
+    }), 200
 
 
 if __name__ == '__main__':

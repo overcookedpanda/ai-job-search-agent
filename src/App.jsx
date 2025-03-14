@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 import JobResearch from './components/JobResearch';
@@ -6,12 +6,36 @@ import LoadingSpinner from './components/LoadingSpinner';
 import SkillsResults from './components/SkillsResults';
 
 // Use environment variable for API URL with fallback for development vs production
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/analyze-job';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:10000';
+const API_URL = `${API_BASE_URL}/api/analyze-job`;
+const HEALTH_CHECK_URL = `${API_BASE_URL}/api/health`;
 
 function App() {
   const [jobSkills, setJobSkills] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [backendStatus, setBackendStatus] = useState('checking');
+
+  // Check backend status when the page loads
+  useEffect(() => {
+    const checkBackendStatus = async () => {
+      try {
+        setBackendStatus('loading');
+        const response = await axios.get(HEALTH_CHECK_URL);
+        if (response.data.status === 'online') {
+          setBackendStatus('ready');
+        }
+      } catch (err) {
+        console.error('Backend not ready:', err);
+        setBackendStatus('unavailable');
+
+        // Try again after a short delay
+        setTimeout(checkBackendStatus, 3000);
+      }
+    };
+
+    checkBackendStatus();
+  }, []);
 
   const analyzeJobPosting = async (url) => {
     setIsLoading(true);
@@ -38,9 +62,29 @@ function App() {
             Research roles, practice interviews, and get personalized feedback to ace your next tech interview.
           </p>
         </header>
-        
+
         <main>
-          <JobResearch onSubmit={analyzeJobPosting} isLoading={isLoading} />
+          {backendStatus === 'checking' || backendStatus === 'loading' ? (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center mb-8">
+              <div className="flex flex-col items-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-3"></div>
+                <p className="text-blue-700 font-medium">Initializing backend service...</p>
+                <p className="text-blue-600 text-sm mt-2">This may take up to 30 seconds if the service was inactive.</p>
+              </div>
+            </div>
+          ) : backendStatus === 'unavailable' ? (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center mb-8">
+              <p className="text-red-700 font-medium">
+                Backend service is currently unavailable. Please try again in a moment.
+              </p>
+            </div>
+          ) : null}
+
+          <JobResearch
+            onSubmit={analyzeJobPosting}
+            isLoading={isLoading}
+            disabled={backendStatus !== 'ready'}
+          />
           
           {isLoading && <LoadingSpinner />}
           
