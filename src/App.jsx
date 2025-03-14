@@ -5,8 +5,8 @@ import JobResearch from './components/JobResearch';
 import LoadingSpinner from './components/LoadingSpinner';
 import SkillsResults from './components/SkillsResults';
 
-// Use environment variable for API URL with fallback
-const API_URL = import.meta.env.VITE_API_URL || '/.netlify/functions/job-search';
+// Use environment variable for API URL with fallback for development vs production
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/analyze-job';
 
 function App() {
   const [jobSkills, setJobSkills] = useState(null);
