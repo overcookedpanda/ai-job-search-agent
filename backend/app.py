@@ -1,15 +1,13 @@
-# backend/app.py
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import asyncio
-import os
 import json
 import re
 import html
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from agents import Agent, Runner, function_tool
+from agents import Agent, Runner, function_tool, RunConfig
 
 # Load environment variables from .env file
 load_dotenv()
@@ -95,6 +93,7 @@ def extract_skills(job_description: str) -> dict:
     {
         "job_title": "Title of the position",
         "company": "Name of company if mentioned",
+        "salary": "Salary range if mentioned",
         "required_skills": {
             "technical_skills": ["skill1", "skill2"],
             "soft_skills": ["skill1", "skill2"],
@@ -110,7 +109,7 @@ def extract_skills(job_description: str) -> dict:
     """
 
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",  # This model works with standard output
+        model="chatgpt-4o-latest",
         messages=[
             {"role": "system",
              "content": "You extract structured information from job descriptions and output only valid JSON."},
@@ -174,6 +173,7 @@ def analyze_job():
             starting_agent=agent,
             input=url,
             context={},
+            run_config=RunConfig(workflow_name='Job Details Extractor', tracing_disabled=False)
         ))
 
         # Process the result to ensure it's in JSON format
