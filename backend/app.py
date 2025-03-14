@@ -21,9 +21,9 @@ load_dotenv()
 
 api_key = os.environ.get('OPENAI_API_KEY')
 if not api_key:
-    print("WARNING: OPENAI_API_KEY environment variable is not set")
+    logger.error("OPENAI_API_KEY environment variable is not set")
 else:
-    print(f"Using OpenAI API key starting with: {api_key[:4]}{'*' * 8}")
+    logger.info(f"Using OpenAI API key: {api_key[:3]}...{api_key[-4:]}")
     # Explicitly set the API key for the OpenAI client
     openai.api_key = api_key
     set_tracing_export_api_key(api_key)
@@ -186,8 +186,8 @@ def analyze_job():
         runner = Runner()
 
         # Log OpenAI key info (safely)
-        api_key = os.environ.get('OPENAI_API_KEY', '')
-        logger.info(f"Using OpenAI API key starting with: {api_key[:4]}{'*' * 10}")
+        openai_api_key = os.environ.get('OPENAI_API_KEY', '')
+        logger.info(f"Using OpenAI API key: {openai_api_key[:3]}...{openai_api_key[-4:]}")
 
         # Create an explicit config with tracing enabled
         run_config = RunConfig(
