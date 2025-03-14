@@ -5,12 +5,28 @@ import json
 import re
 import html
 import requests
+import logging
+import os
+import openai
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from agents import Agent, Runner, function_tool, RunConfig
+from agents import Agent, Runner, function_tool, RunConfig, set_tracing_export_api_key
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 load_dotenv()
+
+api_key = os.environ.get('OPENAI_API_KEY')
+if not api_key:
+    print("WARNING: OPENAI_API_KEY environment variable is not set")
+else:
+    print(f"Using OpenAI API key starting with: {api_key[:4]}{'*' * 8}")
+    # Explicitly set the API key for the OpenAI client
+    openai.api_key = api_key
+    set_tracing_export_api_key(api_key)
 
 app = Flask(__name__)
 CORS(app)
@@ -78,7 +94,6 @@ def extract_skills(job_description: str) -> dict:
     """Extracts key skills from a job description using GPT."""
     import openai
     import json
-
     client = openai.OpenAI()  # Ensure OPENAI_API_KEY is set in environment
 
     prompt = """
@@ -147,10 +162,12 @@ agent = Agent(
 # Helper function to run async code
 def run_async(coro):
     try:
+        logger.info("Starting async execution with tracing enabled")
         return asyncio.run(coro)
     except RuntimeError as e:
         # Handle case where event loop is already running
         if "already running" in str(e):
+            logger.info("Event loop already running, using existing loop")
             loop = asyncio.get_event_loop()
             return loop.run_until_complete(coro)
         raise
@@ -165,16 +182,31 @@ def analyze_job():
     url = data['url']
 
     try:
-        # Create a runner for the agent
+        # Create a runner for the agent with explicit trace settings
         runner = Runner()
+
+        # Log OpenAI key info (safely)
+        api_key = os.environ.get('OPENAI_API_KEY', '')
+        logger.info(f"Using OpenAI API key starting with: {api_key[:4]}{'*' * 10}")
+
+        # Create an explicit config with tracing enabled
+        run_config = RunConfig(
+            workflow_name='Job Details Extractor',
+            tracing_disabled=False,  # Explicitly enable tracing
+        )
+
+        logger.info(f"Running with config: {run_config}")
 
         # Run the agent with the URL using our async helper
         result = run_async(runner.run(
             starting_agent=agent,
             input=url,
             context={},
-            run_config=RunConfig(workflow_name='Job Details Extractor', tracing_disabled=False)
+            run_config=run_config
         ))
+
+        # Log successful completion of agent run
+        logger.info("Agent run completed successfully")
 
         # Process the result to ensure it's in JSON format
         final_output = result.final_output
