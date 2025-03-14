@@ -201,6 +201,7 @@ async function analyzeJobSkills(jobDescription) {
       Format the output as a JSON object with this structure:
       {
           "job_title": "Title of the position",
+          "company": "Name of company",
           "required_skills": {
               "technical_skills": ["skill1", "skill2"],
               "soft_skills": ["skill1", "skill2"],

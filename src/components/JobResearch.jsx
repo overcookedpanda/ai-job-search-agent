@@ -51,7 +51,7 @@ export default function JobResearch({ onSubmit, isLoading }) {
               type="url"
               value={jobUrl}
               onChange={(e) => setJobUrl(e.target.value)}
-              placeholder="Enter job listing URL (Lever or Greenhouse)"
+              placeholder="Enter job listing URL"
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500 focus:border-mint-500"
               required
             />

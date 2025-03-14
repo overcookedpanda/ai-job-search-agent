@@ -22,7 +22,7 @@ export default function SkillsResults({ skills }) {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
       <h2 className="text-xl font-bold text-gray-800 mb-5">
-        Here are the required skills for the {skills?.job_title || 'position'}:
+        Here are the required skills for the {skills?.job_title || 'position'} at {skills?.company}
       </h2>
 
       {skills?.required_skills && (
