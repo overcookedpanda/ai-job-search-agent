@@ -27,10 +27,10 @@ button:focus, input:focus {
   transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 2em rgba(18, 66, 10, 0.67));
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  filter: drop-shadow(0 0 2em rgba(125, 149, 119, 0.67));
 }
 
 @keyframes logo-spin {
