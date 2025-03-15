@@ -2,6 +2,8 @@
 
 An intelligent tool to help you prepare for tech interviews by analyzing job listings to extract required skills, qualifications, and key information.
 
+Deployed at: https://ai-interview-prep.overcookedpanda.com/
+
 ## Features
 
 - **Job Listing Analysis**: Paste any job posting URL to get an AI-powered breakdown of required skills and qualifications
