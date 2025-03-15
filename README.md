@@ -2,7 +2,8 @@
 
 An intelligent tool to help you prepare for tech interviews by analyzing job listings to extract required skills, qualifications, and key information.
 
-Deployed at: https://ai-interview-prep.overcookedpanda.com/
+`main` branch deployed at: https://ai-interview-prep.overcookedpanda.com/
+`development` branch deployed at: https://dev.ai-interview-prep.overcookedpanda.com/
 
 ## Features
 
