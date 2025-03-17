@@ -115,7 +115,7 @@ function App() {
               <div className="flex flex-col items-center">
                 <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-3"></div>
                 <p className="text-blue-700 font-medium">Initializing backend service...</p>
-                <p className="text-blue-600 text-sm mt-2">This may take up to 30 seconds if the service was inactive.</p>
+                <p className="text-blue-600 text-sm mt-2">This may take up to 50 seconds if the service was inactive.</p>
               </div>
             </div>
           ) : backendStatus === 'unavailable' ? (
