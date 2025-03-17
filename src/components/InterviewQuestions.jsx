@@ -244,16 +244,8 @@ export default function InterviewQuestions({ questions, isLoading }) {
                 <li key={index} className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex items-start">
                     <div>
-                      <p className="w-full text-left px-4 py-3 flex justify-between font-semibold text-gray-900">
-                        <ReactMarkdown>
-                          {index + 1}. {tip.title}
-                        </ReactMarkdown>
-                      </p>
-                      <p className="w-full text-left px-4 py-3 flex justify-between items-center text-gray-700">
-                        <ReactMarkdown>
-                          {tip.description}
-                        </ReactMarkdown>
-                      </p>
+                      <p className="w-full text-left px-4 py-3 flex justify-between font-semibold text-gray-900">{index + 1}. {tip.title}</p>
+                      <p className="w-full text-left px-4 py-3 flex justify-between items-center text-gray-700">{tip.description}</p>
                     </div>
                   </div>
                 </li>
