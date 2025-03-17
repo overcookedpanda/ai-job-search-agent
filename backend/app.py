@@ -9,7 +9,7 @@ import logging
 import os
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, List, Optional
 from agents import Agent, Runner, function_tool, set_tracing_export_api_key
 
@@ -273,14 +273,21 @@ async def extract_job_description(html_content: str, url: str) -> dict:
 
 
 # Define the structured output model
+class RequiredSkills(BaseModel):
+    technical_skills: List[str] = Field(default_factory=list, description="Technical skills required for the job")
+    soft_skills: List[str] = Field(default_factory=list, description="Soft skills required for the job")
+    education: List[str] = Field(default_factory=list, description="Education requirements")
+    experience: List[str] = Field(default_factory=list, description="Experience requirements")
+
+
 class JobSkillsOutput(BaseModel):
-    job_title: str
-    company: Optional[str] = None
-    salary: Optional[str] = None
-    required_skills: Dict[str, List[str]]
-    preferred_skills: Optional[List[str]] = None
-    benefits: Optional[List[str]] = None
-    location: Optional[str] = None
+    job_title: str = Field(..., description="The title of the job position")
+    company: Optional[str] = Field(None, description="The company offering the position")
+    salary: Optional[str] = Field(None, description="Salary range if mentioned")
+    required_skills: RequiredSkills = Field(..., description="Required skills categorized by type")
+    preferred_skills: Optional[List[str]] = Field(None, description="Skills that are preferred but not required")
+    benefits: Optional[List[str]] = Field(None, description="Benefits mentioned in the job posting")
+    location: Optional[str] = Field(None, description="Job location (remote, hybrid, onsite, city, etc.)")
 
 
 # 1. Content Retrieval Agent
@@ -292,17 +299,6 @@ web_content_agent = Agent(
     model="gpt-3.5-turbo",  # Using a faster model since this is a simple task
     tools=[fetch_web_content]
 )
-
-# 2. Job Description Extraction Agent
-job_description_agent = Agent(
-    name="JobDescriptionExtractor",
-    instructions="""You are a specialist in extracting job descriptions from web content.
-    Your task is to identify and extract the most relevant job description content from the web page.
-    Use the extract_job_description tool to process the HTML and text content.""",
-    model="gpt-4o-mini",
-    tools=[extract_job_description]
-)
-
 # 3. Skills Analysis Agent
 skills_analysis_agent = Agent(
     name="SkillsAnalyzer",
@@ -324,6 +320,20 @@ skills_analysis_agent = Agent(
     """,
     model="gpt-4o-mini",
     output_type=JobSkillsOutput
+)
+
+# 2. Job Description Extraction Agent
+job_description_agent = Agent(
+    name="JobDescriptionExtractor",
+    instructions="""You are a specialist in extracting job descriptions from web content.
+    Your task is to identify and extract the most relevant job description content from the web page.
+    Use the extract_job_description tool to process the HTML and text content.
+
+    Once you have successfully extracted the job description, you MUST hand off to the SkillsAnalyzer agent
+    to analyze the skills and qualifications required for the position.""",
+    model="gpt-4o-mini",
+    tools=[extract_job_description],
+    handoffs=[skills_analysis_agent]
 )
 
 # Now set up our main orchestration agent
