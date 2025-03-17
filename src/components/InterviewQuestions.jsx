@@ -1,6 +1,6 @@
 // src/components/InterviewQuestions.jsx
 import React, { useState } from "react";
-import LoadingSpinner from "./LoadingSpinner";
+import ReactMarkdown from 'react-markdown';
 
 export default function InterviewQuestions({ questions, isLoading }) {
   const [activeTab, setActiveTab] = useState("technical");
@@ -15,8 +15,7 @@ export default function InterviewQuestions({ questions, isLoading }) {
   if (isLoading) {
     return (
       <div className="mt-8">
-        <LoadingSpinner />
-        <p className="text-center text-gray-600 mt-2">Researching company and generating tailored interview questions...</p>
+        <p className="text-center text-gray-600 mt-2">This could take a while... please be patient.</p>
       </div>
     );
   }
@@ -76,9 +75,9 @@ export default function InterviewQuestions({ questions, isLoading }) {
           </h3>
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="prose prose-sm max-w-none text-gray-600">
-              {companyResearch.split('\n').map((paragraph, i) => (
-                paragraph.trim() && <p key={i}>{paragraph}</p>
-              ))}
+                {companyResearch.split('\n').map((paragraph, i) => (
+                  paragraph.trim() && <p key={i}><ReactMarkdown>{paragraph}</ReactMarkdown></p>
+                ))}
             </div>
           </div>
         </div>
@@ -224,13 +223,9 @@ export default function InterviewQuestions({ questions, isLoading }) {
               {preparationTips.map((tip, index) => (
                 <li key={index} className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex items-start">
-                    <div className="flex-shrink-0 pt-0.5">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-mint-100 text-mint-800 font-semibold text-sm">
-                        {index + 1}
-                      </span>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-gray-700">{tip}</p>
+                    <div>
+                      <p className="w-full text-left px-4 py-3 flex justify-between font-semibold text-gray-900">{index + 1}. {tip.title}</p>
+                      <p className="w-full text-left px-4 py-3 flex justify-between items-center text-gray-700">{tip.description}</p>
                     </div>
                   </div>
                 </li>

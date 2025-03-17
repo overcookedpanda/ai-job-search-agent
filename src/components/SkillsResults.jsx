@@ -47,7 +47,7 @@ export default function SkillsResults({ skills }) {
             </h3>
             <ul className="space-y-2">
               {skills.required_skills.technical_skills.map((skill, index) => (
-                <li key={index} className="flex items-start">
+                <li key={index} className="flex items-start text-left">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -69,7 +69,7 @@ export default function SkillsResults({ skills }) {
             </h3>
             <ul className="space-y-2">
               {skills.required_skills.soft_skills.map((skill, index) => (
-                <li key={index} className="flex items-start">
+                <li key={index} className="flex items-start text-left">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -92,7 +92,7 @@ export default function SkillsResults({ skills }) {
             </h3>
             <ul className="space-y-2">
               {skills.required_skills.experience.map((exp, index) => (
-                <li key={index} className="flex items-start">
+                <li key={index} className="flex items-start text-left">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -114,7 +114,7 @@ export default function SkillsResults({ skills }) {
             </h3>
             <ul className="space-y-2">
               {skills.required_skills.education.map((edu, index) => (
-                <li key={index} className="flex items-start">
+                <li key={index} className="flex items-start text-left">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -136,7 +136,7 @@ export default function SkillsResults({ skills }) {
             </h3>
             <ul className="space-y-2">
               {skills.preferred_skills.map((skill, index) => (
-                <li key={index} className="flex items-start">
+                <li key={index} className="flex items-start text-left">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                   </svg>
@@ -158,7 +158,7 @@ export default function SkillsResults({ skills }) {
             </h3>
             <ul className="space-y-2">
               {skills.benefits.map((benefit, index) => (
-                <li key={index} className="flex items-start">
+                <li key={index} className="flex items-start text-left">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -170,15 +170,15 @@ export default function SkillsResults({ skills }) {
         )}
       </div>
 
-      {/* Raw Output - For debugging, can be removed in production */}
-      {skills.raw_output && (
-        <div className="mt-6 p-4 bg-gray-100 rounded-lg">
-          <h3 className="text-md font-semibold text-gray-700 mb-2">Raw Analysis</h3>
-          <pre className="text-xs whitespace-pre-wrap text-gray-600">
-            {skills.raw_output}
-          </pre>
-        </div>
-      )}
+      {/*/!* Raw Output - For debugging, can be removed in production *!/*/}
+      {/*{skills.raw_output && (*/}
+      {/*  <div className="mt-6 p-4 bg-gray-100 rounded-lg">*/}
+      {/*    <h3 className="text-md font-semibold text-gray-700 mb-2">Raw Analysis</h3>*/}
+      {/*    <pre className="text-xs whitespace-pre-wrap text-gray-600">*/}
+      {/*      {skills.raw_output}*/}
+      {/*    </pre>*/}
+      {/*  </div>*/}
+      {/*)}*/}
     </div>
   );
 }
