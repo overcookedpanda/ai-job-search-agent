@@ -406,7 +406,7 @@ company_research_agent = Agent(
     Research the given company thoroughly to provide:
     1. Company overview, products and services
     2. Company culture and values
-    3. Interview process if available
+    3. Interview process if available (try looking at Glassdoor or other sites)
     4. Recent developments or news
 
     Use web searches to find accurate and up-to-date information. Provide a comprehensive but concise summary that would
@@ -426,9 +426,12 @@ technical_questions_agent = Agent(
     2. Range in difficulty (include easy, medium and hard questions)
     3. Include detailed answer tips for the candidate
 
+    Use web searches to find accurate and up-to-date information.
+
     Each question should test both theoretical knowledge and practical application.
     """,
     model="gpt-4o",
+    tools=[WebSearchTool()],
     output_type=List[InterviewQuestion]
 )
 
@@ -440,10 +443,13 @@ behavioral_questions_agent = Agent(
     1. Evaluate the candidate's soft skills and alignment with company values
     2. Range in difficulty (include easy, medium and hard questions)
     3. Include detailed answer tips for the candidate
+    
+    Use web searches to find accurate and up-to-date information.
 
     Each question should help assess how well the candidate would fit within the company culture and succeed in the role.
     """,
     model="gpt-4o",
+    tools=[WebSearchTool()],
     output_type=List[InterviewQuestion]
 )
 
@@ -454,8 +460,11 @@ preparation_tips_agent = Agent(
 
     Based on the job requirements and company information provided, create 5 specific preparation tips that will
     help the candidate succeed in this particular interview. These should be tailored to the specific role and company.
+    
+    Use web searches to find accurate and up-to-date information.
     """,
     model="gpt-4o",
+    tools=[WebSearchTool()],
     output_type=List[str]
 )
 
@@ -475,15 +484,6 @@ async def research_company(company: str, job_title: str) -> str:
 @function_tool
 async def generate_technical_questions(job_data: str, company_info: str) -> List[InterviewQuestion]:
     """Generate technical interview questions based on job requirements."""
-    # job_data = json.loads(job_data)
-    # # Extract key information from job data
-    # job_title = job_data.get("job_title", "")
-    # company = job_data.get("company", "")
-    # technical_skills = job_data.get("required_skills", {}).get("technical_skills", [])
-    #
-    # skills_text = ", ".join(technical_skills)
-
-    # Run the technical questions agent
     result = await Runner.run(
         starting_agent=technical_questions_agent,
         input=f"""
@@ -492,7 +492,7 @@ async def generate_technical_questions(job_data: str, company_info: str) -> List
         Company information:
         {company_info[:1000]}
         """,
-        context={}
+        context={},
     )
 
     return result.final_output
