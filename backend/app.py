@@ -1,3 +1,5 @@
+import traceback
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import asyncio
@@ -11,7 +13,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional
-from agents import Agent, Runner, function_tool, set_tracing_export_api_key
+from agents import Agent, Runner, function_tool, set_tracing_export_api_key, WebSearchTool
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
@@ -351,6 +353,191 @@ job_analysis_orchestrator = Agent(
     handoffs=[web_content_agent, job_description_agent, skills_analysis_agent]
 )
 
+class InterviewQuestion(BaseModel):
+    question: str
+    category: str
+    difficulty: str
+    answer_tips: str
+
+class InterviewQuestionsOutput(BaseModel):
+    technical_questions: List[InterviewQuestion] = Field(default_factory=list)
+    behavioral_questions: List[InterviewQuestion] = Field(default_factory=list)
+    company_research: Optional[str] = None
+    preparation_tips: List[str] = Field(default_factory=list)
+
+class JobDetails(BaseModel):
+    benefits: Optional[List[str]] = None
+    company: str
+    job_title: str
+    location: str
+    preferred_skills: Optional[List[str]] = None
+    required_skills: RequiredSkills
+    salary: Optional[str] = None
+
+class JobRequest(BaseModel):
+    job_details: JobDetails
+
+class CompanyResearchOutput(BaseModel):
+    company_overview: str
+    culture_and_values: Optional[str] = None
+    interview_process: Optional[str] = None
+    recent_news: Optional[str] = None
+
+company_research_agent = Agent(
+    name="CompanyResearcher",
+    instructions="""You are a professional company researcher who gathers information for job interview candidates.
+
+    Research the given company thoroughly to provide:
+    1. Company overview, products and services
+    2. Company culture and values
+    3. Interview process if available
+    4. Recent developments or news
+
+    Use web searches to find accurate and up-to-date information. Provide a comprehensive but concise summary that would
+    help someone preparing for an interview at this company.
+    """,
+    model="gpt-4o",
+    tools=[WebSearchTool()],
+    output_type=CompanyResearchOutput
+)
+
+technical_questions_agent = Agent(
+    name="TechnicalInterviewer",
+    instructions="""You are an expert technical interviewer who creates challenging questions for job candidates.
+
+    Based on the job requirements and company information provided, create 5 technical interview questions that:
+    1. Target specific technical skills required for the position
+    2. Range in difficulty (include easy, medium and hard questions)
+    3. Include detailed answer tips for the candidate
+
+    Each question should test both theoretical knowledge and practical application.
+    """,
+    model="gpt-4o",
+    output_type=List[InterviewQuestion]
+)
+
+behavioral_questions_agent = Agent(
+    name="BehavioralInterviewer",
+    instructions="""You are an expert interviewer who assesses cultural fit and soft skills.
+
+    Based on the job requirements and company information provided, create 5 behavioral interview questions that:
+    1. Evaluate the candidate's soft skills and alignment with company values
+    2. Range in difficulty (include easy, medium and hard questions)
+    3. Include detailed answer tips for the candidate
+
+    Each question should help assess how well the candidate would fit within the company culture and succeed in the role.
+    """,
+    model="gpt-4o",
+    output_type=List[InterviewQuestion]
+)
+
+# Preparation tips agent
+preparation_tips_agent = Agent(
+    name="InterviewCoach",
+    instructions="""You are an interview coach who helps candidates prepare for job interviews.
+
+    Based on the job requirements and company information provided, create 5 specific preparation tips that will
+    help the candidate succeed in this particular interview. These should be tailored to the specific role and company.
+    """,
+    model="gpt-4o",
+    output_type=List[str]
+)
+
+
+@function_tool
+async def research_company(company: str, job_title: str) -> str:
+    """Research a company to gather information for interview preparation."""
+    result = await Runner.run(
+        starting_agent=company_research_agent,
+        input=f"Research {company} for a {job_title} interview preparation",
+        context={}
+    )
+    print(result)
+    return result.final_output
+
+
+@function_tool
+async def generate_technical_questions(job_data: str, company_info: str) -> List[InterviewQuestion]:
+    """Generate technical interview questions based on job requirements."""
+    # job_data = json.loads(job_data)
+    # # Extract key information from job data
+    # job_title = job_data.get("job_title", "")
+    # company = job_data.get("company", "")
+    # technical_skills = job_data.get("required_skills", {}).get("technical_skills", [])
+    #
+    # skills_text = ", ".join(technical_skills)
+
+    # Run the technical questions agent
+    result = await Runner.run(
+        starting_agent=technical_questions_agent,
+        input=f"""
+        Generate technical interview questions for {job_data}.
+
+        Company information:
+        {company_info[:1000]}
+        """,
+        context={}
+    )
+
+    return result.final_output
+
+
+@function_tool
+async def generate_behavioral_questions(job_data: str, company_info: str) -> List[InterviewQuestion]:
+    """Generate behavioral interview questions based on job requirements."""
+    # Run the behavioral questions agent
+    result = await Runner.run(
+        starting_agent=behavioral_questions_agent,
+        input=f"""
+        Generate behavioral interview questions for a {job_data}.
+
+        Company information:
+        {company_info[:1000]}
+        """,
+        context={}
+    )
+
+    return result.final_output
+
+
+@function_tool
+async def generate_preparation_tips(job_data: str, company_info: str) -> List[str]:
+    """Generate interview preparation tips based on job requirements."""
+
+    # Run the preparation tips agent
+    result = await Runner.run(
+        starting_agent=preparation_tips_agent,
+        input=f"""
+        Generate interview preparation tips for a {job_data}.
+
+        Company information:
+        {company_info[:1000]}
+        """,
+        context={}
+    )
+
+    return result.final_output
+
+
+# Main orchestrator agent
+interview_prep_orchestrator = Agent(
+    name="InterviewPrepOrchestrator",
+    instructions="""You are a master interview preparation coach who orchestrates a comprehensive interview prep plan.
+
+    Your process is:
+    1. First, research the company using the research_company tool
+    2. Then generate technical questions using the generate_technical_questions tool
+    3. Next generate behavioral questions using the generate_behavioral_questions tool
+    4. Finally create preparation tips using the generate_preparation_tips tool
+
+    Compile all of this information into a comprehensive interview preparation guide.
+    Follow this process exactly and use each tool in the order specified.
+    """,
+    model="gpt-4o",
+    tools=[research_company, generate_technical_questions, generate_behavioral_questions, generate_preparation_tips],
+    output_type=InterviewQuestionsOutput
+)
+
 
 # Helper function to run async code
 def run_async(coro):
@@ -405,6 +592,33 @@ def analyze_job():
 
     except Exception as e:
         logger.error(f"Error in analyze_job: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/generate-questions', methods=['POST'])
+def generate_interview_questions():
+    """Endpoint to generate interview questions for a job."""
+    try:
+        data = request.get_json()
+        job_request = JobRequest(**data)  # Parse and validate with Pydantic
+    except Exception as e:
+        logger.error(f"Invalid JSON payload: {str(e)}")
+        return jsonify({"error": "Invalid job details format"}), 400
+
+    logger.info(f'Received job details: {job_request}')
+
+    try:
+        # Run the orchestrator agent with structured input
+        result = run_async(Runner.run(
+            starting_agent=interview_prep_orchestrator,
+            input=json.dumps(data),
+            context={}
+        ))
+
+        return jsonify(result.final_output.model_dump()) if hasattr(result.final_output, "model_dump") else jsonify(result.final_output)
+
+    except Exception as e:
+        logger.error(f"Error generating interview questions: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
