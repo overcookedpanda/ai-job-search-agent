@@ -76,7 +76,11 @@ export default function InterviewQuestions({ questions, isLoading }) {
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="prose prose-sm max-w-none text-gray-600">
                 {companyResearch.split('\n').map((paragraph, i) => (
-                  paragraph.trim() && <p key={i}><ReactMarkdown>{paragraph}</ReactMarkdown></p>
+                  paragraph.trim() && <p key={i}>
+                    <ReactMarkdown>
+                      {paragraph}
+                    </ReactMarkdown>
+                  </p>
                 ))}
             </div>
           </div>
@@ -135,7 +139,11 @@ export default function InterviewQuestions({ questions, isLoading }) {
                     className="w-full text-left px-4 py-3 flex justify-between items-center hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex-1">
-                      <div className="font-medium text-gray-800">{q.question}</div>
+                      <div className="font-medium text-gray-800">
+                        <ReactMarkdown>
+                          {q.question}
+                        </ReactMarkdown>
+                      </div>
                       <div className="flex space-x-2 mt-1">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor(q.difficulty)}`}>
                           {q.difficulty}
@@ -156,7 +164,11 @@ export default function InterviewQuestions({ questions, isLoading }) {
                       <h4 className="text-sm font-semibold text-gray-500 mb-2">Answer Tips:</h4>
                       <div className="text-sm text-gray-600">
                         {q.answer_tips.split('\n').map((tip, i) => (
-                          <p key={i} className="mb-2">{tip}</p>
+                          <p key={i} className="mb-2">
+                            <ReactMarkdown>
+                              {tip}
+                            </ReactMarkdown>
+                          </p>
                         ))}
                       </div>
                     </div>
@@ -181,7 +193,11 @@ export default function InterviewQuestions({ questions, isLoading }) {
                     className="w-full text-left px-4 py-3 flex justify-between items-center hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex-1">
-                      <div className="font-medium text-gray-800">{q.question}</div>
+                      <div className="font-medium text-gray-800">
+                        <ReactMarkdown>
+                          {q.question}
+                        </ReactMarkdown>
+                      </div>
                       <div className="flex space-x-2 mt-1">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor(q.difficulty)}`}>
                           {q.difficulty}
@@ -202,7 +218,11 @@ export default function InterviewQuestions({ questions, isLoading }) {
                       <h4 className="text-sm font-semibold text-gray-500 mb-2">Answer Tips:</h4>
                       <div className="text-sm text-gray-600">
                         {q.answer_tips.split('\n').map((tip, i) => (
-                          <p key={i} className="mb-2">{tip}</p>
+                          <p key={i} className="mb-2">
+                            <ReactMarkdown>
+                              {tip}
+                            </ReactMarkdown>
+                          </p>
                         ))}
                       </div>
                     </div>
@@ -224,8 +244,16 @@ export default function InterviewQuestions({ questions, isLoading }) {
                 <li key={index} className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex items-start">
                     <div>
-                      <p className="w-full text-left px-4 py-3 flex justify-between font-semibold text-gray-900">{index + 1}. {tip.title}</p>
-                      <p className="w-full text-left px-4 py-3 flex justify-between items-center text-gray-700">{tip.description}</p>
+                      <p className="w-full text-left px-4 py-3 flex justify-between font-semibold text-gray-900">
+                        <ReactMarkdown>
+                          {index + 1}. {tip.title}
+                        </ReactMarkdown>
+                      </p>
+                      <p className="w-full text-left px-4 py-3 flex justify-between items-center text-gray-700">
+                        <ReactMarkdown>
+                          {tip.description}
+                        </ReactMarkdown>
+                      </p>
                     </div>
                   </div>
                 </li>
