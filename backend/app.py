@@ -1,18 +1,13 @@
-import traceback
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import asyncio
 import json
 import re
-import html
-import requests
 import logging
 import os
-from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, model_validator
-from typing import Dict, List, Optional
+from typing import List, Optional
 from agents import Agent, Runner, function_tool, set_tracing_export_api_key, WebSearchTool
 
 logging.basicConfig(level=logging.INFO,
