@@ -11,7 +11,7 @@ import logging
 import os
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Dict, List, Optional
 from agents import Agent, Runner, function_tool, set_tracing_export_api_key, WebSearchTool
 
@@ -359,11 +359,32 @@ class InterviewQuestion(BaseModel):
     difficulty: str
     answer_tips: str
 
+class PreparationTip(BaseModel):
+    title: str
+    description: str
+
 class InterviewQuestionsOutput(BaseModel):
     technical_questions: List[InterviewQuestion] = Field(default_factory=list)
     behavioral_questions: List[InterviewQuestion] = Field(default_factory=list)
     company_research: Optional[str] = None
-    preparation_tips: List[str] = Field(default_factory=list)
+    preparation_tips: List[PreparationTip] = Field(default_factory=list)
+
+    @model_validator(mode='before')
+    def parse_preparation_tips(cls, values):
+        # Get raw preparation_tips string from the input values
+        preparation_tips_str = values.get("preparation_tips")
+
+        # If preparation_tips is a raw string, process it into structured list
+        if isinstance(preparation_tips_str, str):
+            pattern = r"### (.*?)\n\n(.*?)\n\n"
+            matches = re.findall(pattern, preparation_tips_str, re.DOTALL)
+            # Convert each match into a PreparationTip
+            values["preparation_tips"] = [
+                PreparationTip(title=title.strip(), description=description.strip())
+                for title, description in matches
+            ]
+
+        return values
 
 class JobDetails(BaseModel):
     benefits: Optional[List[str]] = None
