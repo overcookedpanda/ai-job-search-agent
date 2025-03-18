@@ -110,12 +110,12 @@ export default function InterviewQuestions({ questions, isLoading }) {
       {/* Tabs - Only show if we have any data to display */}
       {(technicalQuestions.length > 0 || behavioralQuestions.length > 0 || preparationTips.length > 0) && (
         <div className="border-b border-gray-200 mb-6">
-          <nav className="-mb-px flex space-x-8">
+          <nav className="-mb-px flex flex-col sm:flex-row w-full gap-2 sm:gap-0">
             <button
               onClick={() => setActiveTab("technical")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              className={`py-2 px-4 text-center border-b-2 font-medium text-sm ${
                 activeTab === "technical"
-                  ? "border-mint-500 text-mint-600"
+                  ? "border-mint-500 text-mint-600 bg-mint-50"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -123,9 +123,9 @@ export default function InterviewQuestions({ questions, isLoading }) {
             </button>
             <button
               onClick={() => setActiveTab("behavioral")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              className={`py-2 px-4 text-center border-b-2 font-medium text-sm ${
                 activeTab === "behavioral"
-                  ? "border-mint-500 text-mint-600"
+                  ? "border-mint-500 text-mint-600 bg-mint-50"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -133,9 +133,9 @@ export default function InterviewQuestions({ questions, isLoading }) {
             </button>
             <button
               onClick={() => setActiveTab("tips")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              className={`py-2 px-4 text-center border-b-2 font-medium text-sm ${
                 activeTab === "tips"
-                  ? "border-mint-500 text-mint-600"
+                  ? "border-mint-500 text-mint-600 bg-mint-50"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
