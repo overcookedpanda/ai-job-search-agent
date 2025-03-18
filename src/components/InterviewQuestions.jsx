@@ -50,8 +50,10 @@ export default function InterviewQuestions({ questions, isLoading }) {
   // Helper to safely access content
   const safeArray = (arr) => Array.isArray(arr) ? arr : [];
 
-  // Get company research content safely
-  const companyResearch = questions.company_research || "";
+  // Get company research content safely - handle both string and object formats
+  const companyResearch = typeof questions.company_research === 'object'
+    ? questions.company_research
+    : { company_overview: questions.company_research || "" };
 
   // Get preparation tips safely
   const preparationTips = safeArray(questions.preparation_tips);
@@ -60,12 +62,35 @@ export default function InterviewQuestions({ questions, isLoading }) {
   const technicalQuestions = safeArray(questions.technical_questions);
   const behavioralQuestions = safeArray(questions.behavioral_questions);
 
+  // Function to process company research sections
+  const formatCompanyResearchSection = (title, content) => {
+    if (!content) return null;
+
+    return (
+      <div className="mb-4">
+        <h4 className="text-lg font-medium text-gray-700 mb-2">{title}</h4>
+        <div className="prose prose-sm max-w-none text-gray-600">
+          {content.split('\n').map((paragraph, i) => (
+            paragraph.trim() && (
+              <p key={i}>
+                <ReactMarkdown>
+                  {paragraph}
+                </ReactMarkdown>
+              </p>
+            )
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 mt-8">
       <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Interview Preparation</h2>
 
       {/* Company Research Section */}
-      {companyResearch && (
+      {(companyResearch.company_overview || companyResearch.culture_and_values ||
+        companyResearch.interview_process || companyResearch.recent_news) && (
         <div className="mb-8">
           <h3 className="text-xl font-semibold text-gray-800 mb-3 flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
@@ -74,15 +99,10 @@ export default function InterviewQuestions({ questions, isLoading }) {
             Company Research
           </h3>
           <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="prose prose-sm max-w-none text-gray-600">
-                {companyResearch.split('\n').map((paragraph, i) => (
-                  paragraph.trim() && <p key={i}>
-                    <ReactMarkdown>
-                      {paragraph}
-                    </ReactMarkdown>
-                  </p>
-                ))}
-            </div>
+            {formatCompanyResearchSection("Company Overview", companyResearch.company_overview)}
+            {formatCompanyResearchSection("Culture and Values", companyResearch.culture_and_values)}
+            {formatCompanyResearchSection("Interview Process", companyResearch.interview_process)}
+            {formatCompanyResearchSection("Recent News", companyResearch.recent_news)}
           </div>
         </div>
       )}
