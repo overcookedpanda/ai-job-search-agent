@@ -1,10 +1,17 @@
-/* App.css - Add these styles */
+/* App.css - Adding dark mode support */
 @import 'tailwindcss';
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: #f9fafb;
   color: #1f2937;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--color-gray-900);
+    color: #f9fafb;
+  }
 }
 
 /* Optional: Add these styles for nicer focus states */
@@ -20,38 +27,15 @@ button:focus, input:focus {
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em rgba(18, 66, 10, 0.67));
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em rgba(125, 149, 119, 0.67));
+/* Add dark mode support for card components */
+.card-bg {
+  background-color: white;
+  border-color: #f3f4f6;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+@media (prefers-color-scheme: dark) {
+  .card-bg {
+    background-color: #273549;
+    border-color: #374151;
   }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }

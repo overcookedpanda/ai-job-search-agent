@@ -100,27 +100,27 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-10">
       <div className="max-w-4xl mx-auto px-4">
         <header className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">AI Interview Preparation</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-4">AI Interview Preparation</h1>
+          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Research roles, practice interviews, and get personalized feedback to ace your next tech interview.
           </p>
         </header>
 
         <main>
           {backendStatus === 'checking' || backendStatus === 'loading' ? (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center mb-8">
+            <div className="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center mb-8">
               <div className="flex flex-col items-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-3"></div>
-                <p className="text-blue-700 font-medium">Initializing backend service...</p>
-                <p className="text-blue-600 text-sm mt-2">This may take up to 50 seconds if the service was inactive.</p>
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 dark:border-blue-300 mb-3"></div>
+                <p className="text-blue-700 dark:text-blue-300 font-medium">Initializing backend service...</p>
+                <p className="text-blue-600 dark:text-blue-300 text-sm mt-2">This may take up to 50 seconds if the service was inactive.</p>
               </div>
             </div>
           ) : backendStatus === 'unavailable' ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center mb-8">
-              <p className="text-red-700 font-medium">
+            <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center mb-8">
+              <p className="text-red-700 dark:text-red-300 font-medium">
                 Backend service is currently unavailable. Please try again in a moment.
               </p>
             </div>
@@ -148,33 +148,36 @@ function App() {
                 onStructuredDataReady={handleStructuredDataReady}
               />
 
-              {/* Generate Interview Questions Button */}
+              {/* Generate Interview Questions Section */}
               <div className="mt-8 text-center">
-                <button
-                  onClick={generateInterviewQuestions}
-                  disabled={isLoadingQuestions}
-                  className="py-3 px-6 bg-mint-600 hover:bg-mint-700 text-green-950 font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-300 disabled:opacity-50 transition duration-200 shadow-sm"
-                >
-                  {isLoadingQuestions ? (
-                    <>
-                      <span className="inline-block animate-spin mr-2 h-4 w-4 border-2 border-green-950 border-t-transparent rounded-full"></span>
-                      Generating Questions...
-                    </>
-                  ) : (
-                    'Generate Interview Questions'
-                  )}
-                </button>
+                {isLoadingQuestions ? (
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="bg-gray-800 dark:bg-gray-700 border border-gray-700 dark:border-gray-600 rounded-lg px-6 py-4 inline-flex items-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-mint-400 border-t-transparent mr-3"></div>
+                      <span className="text-gray-200">Generating Questions...</span>
+                    </div>
+                    <p className="text-center text-gray-400 mt-3">This could take a while... please be patient.</p>
+                  </div>
+                ) : (
+                  // Normal State - Now a div styled as a button
+                  <div
+                    onClick={generateInterviewQuestions}
+                    className="border border-gray-300 dark:bg-gray-800 inline-block py-3 px-8 bg-mint-600 hover:bg-mint-500 dark:text-white font-medium rounded-lg shadow-md transition duration-200 cursor-pointer"
+                  >
+                    Generate Interview Questions
+                  </div>
+                )}
               </div>
             </>
           )}
 
           <InterviewQuestions
-            questions={interviewQuestions}
-            isLoading={isLoadingQuestions}
+              questions={interviewQuestions}
+              isLoading={isLoadingQuestions}
           />
         </main>
 
-        <footer className="mt-14 text-center text-gray-500 text-sm">
+        <footer className="mt-14 text-center text-gray-500 dark:text-gray-400 text-sm">
           <p>© {new Date().getFullYear()} Overcooked Panda</p>
         </footer>
       </div>
