@@ -398,8 +398,7 @@ job_analysis_orchestrator = Agent(
 
 preparation_tips_agent = Agent(
     name="InterviewCoach",
-    instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
-    You are an interview coach who helps candidates prepare for job interviews.
+    instructions="""You are an interview coach who helps candidates prepare for job interviews.
 
     Based on the job requirements and company information provided, create 5 specific preparation tips that will
     help the candidate succeed in this particular interview. These should be tailored to the specific role and company.
@@ -412,14 +411,12 @@ preparation_tips_agent = Agent(
     """,
     model="gpt-4o",
     tools=[WebSearchTool()],
-    output_type=PrepTipsOutput,
-    handoffs=[]
+    output_type=PrepTipsOutput
 )
 
 behavioral_questions_agent = Agent(
     name="BehavioralInterviewer",
-    instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
-    You are an expert interviewer who assesses cultural fit and soft skills.
+    instructions="""You are an expert interviewer who assesses cultural fit and soft skills.
 
     Based on the job requirements and company information already provided, create 5 behavioral interview questions that:
     1. Evaluate the candidate's soft skills and alignment with company values
@@ -429,20 +426,15 @@ behavioral_questions_agent = Agent(
     Use web searches to find accurate and up-to-date information about relevant behavioral skills for this role.
 
     Each question should help assess how well the candidate would fit within the company culture and succeed in the role.
-
-    CRITICAL INSTRUCTION: After completing your questions, you MUST hand off to the InterviewCoach agent.
-    This is the final required step in the interview preparation process. Do not finish your response without performing this handoff.
     """,
     model="gpt-4o",
     tools=[WebSearchTool()],
-    output_type=BehavioralQuestionsOutput,
-    handoffs=[preparation_tips_agent]
+    output_type=BehavioralQuestionsOutput
 )
 
 technical_questions_agent = Agent(
     name="TechnicalInterviewer",
-    instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
-    You are an expert technical interviewer who creates challenging questions for job candidates.
+    instructions="""You are an expert technical interviewer who creates challenging questions for job candidates.
 
     Based on the job requirements and company information provided, create 5 technical interview questions that:
     1. Target specific technical skills required for the position
@@ -452,20 +444,15 @@ technical_questions_agent = Agent(
     Use web searches to find accurate and up-to-date information.
 
     Each question should test both theoretical knowledge and practical application.
-
-    CRITICAL INSTRUCTION: After completing your questions, you MUST hand off to the BehavioralInterviewer agent.
-    This is a required step in the interview preparation process. Do not finish your response without performing this handoff.
     """,
     model="gpt-4o",
     tools=[WebSearchTool()],
-    output_type=TechnicalQuestionsOutput,
-    handoffs=[behavioral_questions_agent]
+    output_type=TechnicalQuestionsOutput
 )
 
 company_research_agent = Agent(
     name="CompanyResearcher",
-    instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
-    You are a professional company researcher who gathers information for job interview candidates.
+    instructions="""You are a professional company researcher who gathers information for job interview candidates.
 
     Research the given company thoroughly to provide:
     1. Company overview, products and services
@@ -475,30 +462,43 @@ company_research_agent = Agent(
 
     Use web searches to find accurate and up-to-date information. Provide a comprehensive but concise summary that would
     help someone preparing for an interview at this company.
-
-    After you have completed your research, hand off to the TechnicalInterviewer to generate technical questions based on your findings.
     """,
     model="gpt-4o",
     tools=[WebSearchTool()],
-    output_type=CompanyResearchOutput,
-    handoffs=[technical_questions_agent]
+    output_type=CompanyResearchOutput
 )
 
 interview_prep_orchestrator = Agent(
     name="InterviewPrepOrchestrator",
-    instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
-    You are a master interview preparation coach who orchestrates a comprehensive interview prep plan.
+    instructions="""You are a master interview preparation coach who orchestrates a comprehensive interview prep plan.
 
     Your process involves the following agents working in sequence:
     1. CompanyResearcher - Researches the company
-    2. TechnicalInterviewer - Creates technical interview questions
-    3. BehavioralInterviewer - Creates behavioral interview questions
-    4. InterviewCoach - Provides preparation tips
+    2. TechnicalInterviewer - Creates technical interview questions relevant to the position at the company
+    3. BehavioralInterviewer - Creates behavioral interview questions relevant to the position at the company
+    4. InterviewCoach - Provides preparation tips relevant to the position at the company
 
-    Your role is to initiate this process and compile the final results into a comprehensive interview preparation guide.
+    Your role is to initiate this process and compile the final results into a comprehensive interview preparation guide relevant to the position at the company.
     """,
     model="gpt-4o",
-    handoffs=[company_research_agent],
+    tools=[
+        company_research_agent.as_tool(
+            tool_name="CompanyResearcher",
+            tool_description="Researches the company"
+        ),
+        technical_questions_agent.as_tool(
+            tool_name="TechnicalInterviewer",
+            tool_description="Creates technical interview questions relevant to the position at the company"
+        ),
+        behavioral_questions_agent.as_tool(
+            tool_name="BehavioralInterviewer",
+            tool_description="Creates behavioral interview questions relevant to the position at the company"
+        ),
+        preparation_tips_agent.as_tool(
+            tool_name="InterviewCoach",
+            tool_description="Provides preparation tips relevant to the position at the company"
+        ),
+        ],
     output_type=InterviewPrepOutput
 )
 
@@ -578,71 +578,30 @@ def generate_interview_questions():
             context={}
         ))
 
-        # Combine outputs from all agents into a single InterviewPrepOutput object
-        combined_output = build_interview_prep_output(result)
-
-        # Return the combined output as JSON
-        return jsonify(combined_output.model_dump())
+        # With output_type specified, the model should return a structured object
+        if hasattr(result.final_output, "model_dump"):
+            # This is a Pydantic model
+            return jsonify(result.final_output.model_dump())
+        elif isinstance(result.final_output, dict):
+            # This is already a dict
+            return jsonify(result.final_output)
+        else:
+            # This is probably a string, try to extract JSON
+            try:
+                import re
+                json_pattern = re.compile(r'({.*})', re.DOTALL)
+                match = json_pattern.search(result.final_output)
+                if match:
+                    skills_data = json.loads(match.group(1))
+                    return jsonify(skills_data)
+                else:
+                    return jsonify({"raw_output": result.final_output})
+            except Exception:
+                return jsonify({"raw_output": result.final_output})
 
     except Exception as e:
         logger.error(f"Error generating interview questions: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
-
-def build_interview_prep_output(run_result):
-    """
-    Extract outputs from each agent and combine into a final InterviewPrepOutput model.
-    """
-    # Initialize variables to store outputs
-    company_research = None
-    technical_questions = []
-    behavioral_questions = []
-    preparation_tips = []
-
-    # Loop through all the message output items
-    for item in run_result.new_items:
-        if getattr(item, 'type', None) == 'message_output_item':
-            raw_item = getattr(item, 'raw_item', None)
-            if raw_item and hasattr(raw_item, 'content') and raw_item.content:
-                try:
-                    # Extract the text content
-                    text = raw_item.content[0].text
-                    # Parse the JSON
-                    data = json.loads(text)
-
-                    # Determine which agent's output this is based on the content structure
-                    if 'company_overview' in data:
-                        company_research = CompanyResearchOutput(
-                            company_overview=data.get('company_overview', ''),
-                            culture_and_values=data.get('culture_and_values', ''),
-                            interview_process=data.get('interview_process', ''),
-                            recent_news=data.get('recent_news', '')
-                        )
-                    elif 'technical_questions' in data:
-                        technical_questions = [InterviewQuestion(**q) for q in data['technical_questions']]
-                    elif 'behavioral_questions' in data:
-                        behavioral_questions = [InterviewQuestion(**q) for q in data['behavioral_questions']]
-                    elif 'preparation_tips' in data:
-                        preparation_tips = [PreparationTip(**tip) for tip in data['preparation_tips']]
-                except (json.JSONDecodeError, KeyError, TypeError, AttributeError) as e:
-                    logger.error(f"Error processing output item: {e}")
-
-    # Fallback: If we couldn't extract from messages, try to get from final_output
-    if hasattr(run_result, 'final_output'):
-        if not preparation_tips and hasattr(run_result.final_output, 'preparation_tips'):
-            preparation_tips = run_result.final_output.preparation_tips
-
-        # Add other fallback extractions if needed
-
-    # Create and return the combined output, ensuring we have valid defaults
-    return InterviewPrepOutput(
-        company_research=company_research or CompanyResearchOutput(
-            company_overview="", culture_and_values="", interview_process="", recent_news=""
-        ),
-        technical_questions=technical_questions,
-        behavioral_questions=behavioral_questions,
-        preparation_tips=preparation_tips
-    )
 
 
 @app.route('/api/health', methods=['GET'])
