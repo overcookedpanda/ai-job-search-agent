@@ -152,11 +152,11 @@ function App() {
               <div className="mt-8 text-center">
                 {isLoadingQuestions ? (
                   <div className="flex flex-col items-center justify-center">
-                    <div className="bg-gray-800 dark:bg-gray-700 border border-gray-700 dark:border-gray-600 rounded-lg px-6 py-4 inline-flex items-center">
+                    <div className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-6 py-4 inline-flex items-center">
                       <div className="animate-spin rounded-full h-5 w-5 border-2 border-mint-400 border-t-transparent mr-3"></div>
-                      <span className="text-gray-200">Generating Questions...</span>
+                      <span className="text-gray-800 dark:text-gray-200">Generating Questions...</span>
                     </div>
-                    <p className="text-center text-gray-400 mt-3">This could take a while... please be patient.</p>
+                    <p className="text-center text-gray-700 dark:text-gray-400 mt-3">This could take a while... please be patient.</p>
                   </div>
                 ) : (
                   // Normal State - Now a div styled as a button
