@@ -401,7 +401,7 @@ preparation_tips_agent = Agent(
     instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
     You are an interview coach who helps candidates prepare for job interviews.
 
-    Based on the job requirements and company information provided, create 10 specific preparation tips that will
+    Based on the job requirements and company information provided, create 5 specific preparation tips that will
     help the candidate succeed in this particular interview. These should be tailored to the specific role and company.
 
     Each tip should include:
@@ -421,7 +421,7 @@ behavioral_questions_agent = Agent(
     instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
     You are an expert interviewer who assesses cultural fit and soft skills.
 
-    Based on the job requirements and company information already provided, create 10 behavioral interview questions that:
+    Based on the job requirements and company information already provided, create 5 behavioral interview questions that:
     1. Evaluate the candidate's soft skills and alignment with company values
     2. Range in difficulty (include easy, medium and hard questions)
     3. Include detailed answer tips for the candidate
@@ -444,7 +444,7 @@ technical_questions_agent = Agent(
     instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
     You are an expert technical interviewer who creates challenging questions for job candidates.
 
-    Based on the job requirements and company information provided, create 10 technical interview questions that:
+    Based on the job requirements and company information provided, create 5 technical interview questions that:
     1. Target specific technical skills required for the position
     2. Range in difficulty (include easy, medium and hard questions)
     3. Include detailed answer tips for the candidate
@@ -491,9 +491,9 @@ interview_prep_orchestrator = Agent(
 
     Your process involves the following agents working in sequence:
     1. CompanyResearcher - Researches the company
-    2. TechnicalInterviewer - Creates 10 technical interview questions
-    3. BehavioralInterviewer - Creates 10 behavioral interview questions
-    4. InterviewCoach - Provides 10 preparation tips
+    2. TechnicalInterviewer - Creates technical interview questions
+    3. BehavioralInterviewer - Creates behavioral interview questions
+    4. InterviewCoach - Provides preparation tips
 
     Your role is to initiate this process and compile the final results into a comprehensive interview preparation guide.
     """,
