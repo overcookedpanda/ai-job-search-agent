@@ -65,10 +65,10 @@ export default function JobResearch({ onSubmit, isLoading, disabled }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
+    <div className="card-bg rounded-xl shadow-lg p-6 mb-8 border dark:border-gray-700">
       <div className="mb-5">
-        <h2 className="text-xl font-bold text-gray-800">Research Role</h2>
-        <p className="text-gray-600 mt-2">Enter any job listing URL to analyze the required skills and qualifications.</p>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Research Role</h2>
+        <p className="text-gray-600 dark:text-gray-300 mt-2">Enter any job listing URL to analyze the required skills and qualifications.</p>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -83,7 +83,7 @@ export default function JobResearch({ onSubmit, isLoading, disabled }) {
             value={jobUrl}
             onChange={handleUrlChange}
             placeholder="Enter job listing URL"
-            className={`w-full pl-10 pr-4 py-3 border ${urlError ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 ${urlError ? 'focus:ring-red-500 focus:border-red-500' : 'focus:ring-mint-500 focus:border-mint-500'}`}
+            className={`w-full pl-10 pr-4 py-3 border ${urlError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:outline-none focus:ring-2 ${urlError ? 'focus:ring-red-500 focus:border-red-500' : 'focus:ring-mint-500 focus:border-mint-500'} bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
             required
             disabled={disabled || isLoading}
           />
@@ -98,13 +98,13 @@ export default function JobResearch({ onSubmit, isLoading, disabled }) {
         <button
           type="submit"
           disabled={isLoading || !jobUrl.trim() || disabled}
-          className="w-full py-3 px-4 bg-mint-600 hover:bg-mint-700 text-green-950 font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-300 disabled:opacity-50 transition duration-200 shadow-sm"
+          className="w-full py-3 px-4 bg-mint-600 dark:bg-gray-900 hover:bg-gray-700 dark:hover:bg-gray-700 text-green-950 dark:text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-300 disabled:opacity-50 transition duration-200 shadow-sm"
         >
           {isLoading ? 'Analyzing...' : disabled ? 'Waiting for backend...' : 'Analyze Job Listing'}
         </button>
       </form>
 
-      <div className="mt-4 text-sm text-gray-500">
+      <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
         <p>Supported sites: Indeed, Glassdoor, Lever, Greenhouse, Workday, and most company career pages.</p>
       </div>
     </div>

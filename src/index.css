@@ -17,6 +17,32 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: rgba(255, 255, 255, 0.87);
+    background-color: #242424;
+  }
+}
+
+a {
+  font-weight: 500;
+  color: rgba(18, 66, 10, 0.67);
+  text-decoration: inherit;
+}
+a:hover {
+  color: #55af65;
+}
+
+@media (prefers-color-scheme: dark) {
+  a {
+    color: #55af65;
+  }
+  a:hover {
+    color: #6fbf7e;
+  }
+}
+
+
 a {
   font-weight: 500;
   color: rgba(18, 66, 10, 0.67);
@@ -45,10 +71,11 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--color-gray-900);
   cursor: pointer;
   transition: border-color 0.25s;
 }
+
 button:hover {
   border-color: #55af65;
 }
@@ -67,5 +94,14 @@ button:focus-visible {
   }
   button {
     background-color: #f9f9f9;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  a {
+    color: #55af65; /* Brighter green for dark mode */
+  }
+  a:hover {
+    color: #6fbf7e; /* Even brighter on hover in dark mode */
   }
 }
