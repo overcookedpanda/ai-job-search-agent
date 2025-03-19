@@ -83,7 +83,6 @@ async def fetch_web_content(url: str) -> dict:
         return {
             "success": False,
             "error": "Firecrawl API key not found in environment variables",
-            "html": None,
             "text": None
         }
 
@@ -92,21 +91,19 @@ async def fetch_web_content(url: str) -> dict:
         app = FirecrawlApp(api_key=firecrawl_api_key)
 
         # Scrape the URL with both markdown and HTML formats
-        scrape_result = app.scrape_url(url, params={'formats': ['markdown', 'html']})
+        scrape_result = app.scrape_url(url, params={'formats': ['markdown']})
 
         # Check if scraping was successful
         if not scrape_result:
             return {
                 "success": False,
                 "error": "No content retrieved from the URL",
-                "html": None,
                 "text": None
             }
 
         return {
             "success": True,
             "error": None,
-            "html": scrape_result.get('html', ''),
             "text": scrape_result.get('markdown', ''),
             "title": scrape_result.get('metadata', {}).get('title', ''),
             "url": url
@@ -116,7 +113,6 @@ async def fetch_web_content(url: str) -> dict:
         return {
             "success": False,
             "error": f"Firecrawl scraping error: {str(e)}",
-            "html": None,
             "text": None
         }
 
