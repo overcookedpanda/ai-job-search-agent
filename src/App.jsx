@@ -63,7 +63,12 @@ function App() {
       }
     } catch (err) {
       console.error('Error analyzing job:', err);
+    // Check if this is a validation error
+    if (err.response?.data?.error === "URL validation failed") {
+      setError(err.response.data.message || "This doesn't appear to be a valid job posting URL.");
+    } else {
       setError(err.response?.data?.error || err.message || 'Failed to analyze job posting');
+    }
     } finally {
       setIsLoading(false);
     }
