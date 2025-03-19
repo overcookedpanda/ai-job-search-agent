@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from agents import Agent, Runner, function_tool, set_tracing_export_api_key, WebSearchTool
-from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
@@ -30,130 +29,162 @@ CORS(app)
 
 
 @function_tool
+def parse_url(url: str) -> dict:
+    """
+    Performs basic parsing of a URL to validate its structure.
+
+    Args:
+        url: The URL to parse
+
+    Returns:
+        A dictionary with parsed URL components and validation status
+    """
+    from urllib.parse import urlparse
+
+    try:
+        parsed_url = urlparse(url)
+        if not all([parsed_url.scheme, parsed_url.netloc]):
+            return {
+                "is_valid": False,
+                "reason": "Invalid URL structure. URL must include http:// or https://"
+            }
+
+        return {
+            "is_valid": True,
+            "scheme": parsed_url.scheme,
+            "domain": parsed_url.netloc,
+            "path": parsed_url.path,
+            "query": parsed_url.query
+        }
+    except Exception as e:
+        return {
+            "is_valid": False,
+            "reason": f"URL parsing error: {str(e)}"
+        }
+
+
+@function_tool
 async def fetch_web_content(url: str) -> dict:
     """
-    Fetches content from a URL with robust error handling and retry logic.
-    Returns both HTML content and text content when successful.
-    """
-    import requests
-    from bs4 import BeautifulSoup
-    from urllib.parse import urlparse
-    import time
+    Fetches content from a URL using Firecrawl with robust error handling.
 
-    # Validate URL format
-    try:
-        result = urlparse(url)
-        if not all([result.scheme, result.netloc]):
-            return {
-                "success": False,
-                "error": "Invalid URL format. Please provide a complete URL including http:// or https://",
-                "html": None,
-                "text": None
-            }
-    except Exception:
+    Args:
+        url: The URL to scrape
+
+    Returns:
+        A dictionary containing scraping results or error information
+    """
+    import os
+    from firecrawl import FirecrawlApp
+
+    # Retrieve Firecrawl API key from environment
+    firecrawl_api_key = os.environ.get('FIRECRAWL_API_KEY')
+    if not firecrawl_api_key:
         return {
             "success": False,
-            "error": "URL parsing error",
+            "error": "Firecrawl API key not found in environment variables",
             "html": None,
             "text": None
         }
 
-    # Define headers to mimic a browser
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-    }
+    try:
+        # Initialize Firecrawl app
+        app = FirecrawlApp(api_key=firecrawl_api_key)
 
-    # Retry logic
-    max_retries = 3
-    retry_delay = 2  # seconds
+        # Scrape the URL with both markdown and HTML formats
+        scrape_result = app.scrape_url(url, params={'formats': ['markdown', 'html']})
 
-    for attempt in range(max_retries):
-        try:
-            response = requests.get(url, headers=headers, timeout=15)
-
-            # Check if the request was successful
-            if response.status_code == 200:
-                # Store the full raw HTML
-                raw_html = response.text
-
-                # Parse the content with BeautifulSoup for extracting text
-                soup = BeautifulSoup(raw_html, 'html.parser')
-
-                # Remove script and style elements for the text version only
-                for script_or_style in soup(["script", "style"]):
-                    script_or_style.decompose()
-
-                # Get the text content
-                text = soup.get_text(separator=' ', strip=True)
-
-                # Clean up the text content
-                import re
-                # Replace multiple spaces with single space
-                text = re.sub(r'\s+', ' ', text)
-                # Replace multiple newlines with single newline
-                text = re.sub(r'\n+', '\n', text)
-                text = text.strip()
-
-                return {
-                    "success": True,
-                    "error": None,
-                    "html": raw_html,  # Return the complete raw HTML
-                    "text": text,
-                    "title": soup.title.string if soup.title else None,
-                    "status_code": response.status_code,
-                    "url": response.url  # Include the final URL (after any redirects)
-                }
-            else:
-                # If it's the last attempt, return the error
-                if attempt == max_retries - 1:
-                    return {
-                        "success": False,
-                        "error": f"HTTP error: {response.status_code}",
-                        "html": None,
-                        "text": None,
-                        "status_code": response.status_code
-                    }
-
-        except requests.exceptions.Timeout:
-            if attempt == max_retries - 1:
-                return {
-                    "success": False,
-                    "error": "Request timed out",
-                    "html": None,
-                    "text": None
-                }
-
-        except requests.exceptions.TooManyRedirects:
+        # Check if scraping was successful
+        if not scrape_result:
             return {
                 "success": False,
-                "error": "Too many redirects",
+                "error": "No content retrieved from the URL",
                 "html": None,
                 "text": None
             }
 
-        except requests.exceptions.RequestException as e:
-            if attempt == max_retries - 1:
-                return {
-                    "success": False,
-                    "error": f"Request error: {str(e)}",
-                    "html": None,
-                    "text": None
-                }
+        return {
+            "success": True,
+            "error": None,
+            "html": scrape_result.get('html', ''),
+            "text": scrape_result.get('markdown', ''),
+            "title": scrape_result.get('metadata', {}).get('title', ''),
+            "url": url
+        }
 
-        # Wait before retrying
-        time.sleep(retry_delay)
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Firecrawl scraping error: {str(e)}",
+            "html": None,
+            "text": None
+        }
 
-    # This should not be reached due to the returns in the loop
-    return {
-        "success": False,
-        "error": "Unknown error occurred",
-        "html": None,
-        "text": None
-    }
+
+@function_tool
+async def validate_job_url(url: str) -> dict:
+    """
+    Analyzes a URL to determine if it's likely a job posting.
+
+    Args:
+        url: The URL to analyze
+
+    Returns:
+        A dictionary with validation results
+    """
+    from openai import OpenAI
+    import json
+
+    client = OpenAI()
+
+    prompt = f"""Analyze this URL: {url}
+
+    Is this likely to be a job posting URL? Consider:
+    1. Domain - Is it a known job board (indeed, linkedin, glassdoor, etc.) or company careers page?
+    2. URL path - Does it contain job-related terms like "job", "career", "position", "apply"?
+    3. URL parameters - Are there job ID parameters or similar?
+    4. Overall structure - Does it match common patterns for job listings?
+
+    Return a JSON object with these fields:
+    - is_valid: true if this appears to be a valid URL structure
+    - likely_job_posting: true if this is likely a job posting page
+    - confidence: a number between 0 and 1 indicating your confidence
+    - reason: a brief explanation of your decision
+    """
+
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are an expert at analyzing URLs to determine if they are job postings."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.1
+    )
+
+    try:
+        content = response.choices[0].message.content
+        # Try to extract JSON from the response
+        import re
+        json_pattern = re.compile(r'{.*}', re.DOTALL)
+        match = json_pattern.search(content)
+        if match:
+            result = json.loads(match.group(0))
+            return result
+        else:
+            # Fallback if we couldn't extract JSON
+            return {
+                "is_valid": True,
+                "likely_job_posting": True,
+                "confidence": 0.5,
+                "reason": "Could not parse validation result"
+            }
+    except Exception as e:
+        return {
+            "is_valid": True,
+            "likely_job_posting": True,
+            "confidence": 0.5,
+            "reason": f"Error during validation: {str(e)}"
+        }
 
 
 @function_tool
@@ -268,6 +299,11 @@ async def extract_job_description(html_content: str, url: str) -> dict:
             "error": str(e)
         }
 
+class URLValidationResult(BaseModel):
+    is_valid: bool = Field(..., description="Whether the URL has a valid structure")
+    likely_job_posting: bool = Field(..., description="Whether this is likely a job posting URL")
+    confidence: float = Field(..., description="Confidence level between 0 and 1")
+    reason: str = Field(..., description="Explanation for the validation result")
 
 # Define the structured output model
 class RequiredSkills(BaseModel):
@@ -338,6 +374,27 @@ class InterviewPrepOutput(BaseModel):
     preparation_tips: List[PreparationTip]
 
 
+url_validation_agent = Agent(
+    name="URLValidator",
+    instructions="""You are an expert at analyzing URLs to determine if they are job postings.
+
+    Analyze the given URL and determine if it's likely to be a job posting page. Consider:
+    1. Domain - Is it a known job board (indeed, linkedin, glassdoor, etc.) or company careers page?
+    2. URL path - Does it contain job-related terms like "job", "career", "position", "apply"?
+    3. URL parameters - Are there job ID parameters or similar?
+    4. Overall structure - Does it match common patterns for job listings?
+
+    Known job sites include: indeed.com, linkedin.com/jobs, glassdoor.com, monster.com, ziprecruiter.com, 
+    lever.co, greenhouse.io, workday.com, careers pages, and company websites with /jobs or /careers paths.
+
+    Return your analysis in the required format, being very careful about whether this is likely a job posting.
+    Only confirm likely_job_posting as true if you are reasonably confident it is an actual job posting URL.
+    """,
+    model="gpt-4o-mini",  # Using a model that supports structured outputs
+    output_type=URLValidationResult
+)
+
+
 web_content_agent = Agent(
     name="WebContentRetriever",
     instructions="""You are a specialist in retrieving web content. 
@@ -386,13 +443,25 @@ job_analysis_orchestrator = Agent(
     name="JobAnalysisOrchestrator",
     instructions="""You are an assistant that coordinates job posting analysis.
     Your workflow is:
-    1. First retrieve the web content from the URL
-    2. Then extract the job description from the web content
-    3. Finally, analyze the job description to identify skills and requirements
 
-    Don't skip any steps and make sure to follow this workflow precisely.""",
+    1. First parse the URL to verify it has a valid structure using the parse_url tool
+    2. If the structure is valid, use the URLValidator to determine if it's likely a job posting
+    3. If it's likely a job posting, retrieve the web content from the URL
+    4. Then extract the job description from the web content
+    5. Finally, analyze the job description to identify skills and requirements
+
+    If the URL doesn't have a valid structure or doesn't look like a job posting, inform the user and do not proceed with retrieval.
+    Don't skip any steps and make sure to follow this workflow precisely.
+    """,
     model="gpt-4o-mini",
-    tools=[fetch_web_content],  # Give it the ability to fetch content directly
+    tools=[
+        parse_url,
+        fetch_web_content,
+        url_validation_agent.as_tool(
+            tool_name="validate_job_url",
+            tool_description="Analyzes a URL to determine if it's likely a job posting"
+        )
+    ],
     handoffs=[web_content_agent, job_description_agent, skills_analysis_agent]
 )
 
@@ -531,6 +600,15 @@ def analyze_job():
             input=url,
             context={}
         ))
+
+        # Check if we received an error message about URL validation
+        if isinstance(result.final_output, str) and any(phrase in result.final_output.lower() for phrase in
+                                                      ["not a job posting", "invalid url", "not valid", "doesn't appear to be"]):
+            logger.info(f"URL validation failed for {url}: {result.final_output}")
+            return jsonify({
+                "error": "URL validation failed",
+                "message": result.final_output
+            }), 400
 
         # With output_type specified, the model should return a structured object
         if hasattr(result.final_output, "model_dump"):
