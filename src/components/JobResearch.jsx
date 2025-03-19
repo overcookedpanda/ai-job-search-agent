@@ -27,6 +27,7 @@ export default function JobResearch({ onSubmit, isLoading, disabled }) {
       'apply',
       'job-',
       'job/',
+      '/jobs/',
       'position',
       'vacancy',
       'recruit'
