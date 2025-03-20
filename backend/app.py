@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from agents import Agent, Runner, function_tool, set_tracing_export_api_key, WebSearchTool
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from metrics import track_openai_usage, init_metrics, MetricsMiddleware
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
@@ -26,6 +28,137 @@ else:
 
 app = Flask(__name__)
 CORS(app)
+
+
+init_metrics()
+app.wsgi_app = MetricsMiddleware(app.wsgi_app)
+
+
+def track_openai_call(client_method, *args, **kwargs):
+    """
+    Wrapper for OpenAI API calls to track usage metrics
+
+    Args:
+        client_method: The OpenAI client method to call
+        *args, **kwargs: Arguments to pass to the method
+
+    Returns:
+        The result of the OpenAI API call
+    """
+    model = kwargs.get('model', 'unknown')
+    logger.info(f"Making OpenAI API call to model: {model}")
+
+    response = client_method(*args, **kwargs)
+
+    # Debug the response structure
+    logger.debug(f"Response type: {type(response)}")
+    if hasattr(response, 'usage'):
+        logger.debug(f"Usage attributes: {dir(response.usage)}")
+    else:
+        logger.debug("Response has no usage attribute")
+
+    # Extract usage information if available
+    if hasattr(response, 'usage'):
+        try:
+            # OpenAI Chat API structure
+            if hasattr(response.usage, 'prompt_tokens'):
+                input_tokens = response.usage.prompt_tokens
+                output_tokens = response.usage.completion_tokens
+                logger.info(f"Tracking OpenAI usage for {model}: {input_tokens} input, {output_tokens} output tokens")
+                track_openai_usage(model, input_tokens, output_tokens)
+            # Agents SDK structure
+            elif hasattr(response.usage, 'input_tokens'):
+                input_tokens = response.usage.input_tokens
+                output_tokens = response.usage.output_tokens
+                logger.info(f"Tracking OpenAI usage for {model}: {input_tokens} input, {output_tokens} output tokens")
+                track_openai_usage(model, input_tokens, output_tokens)
+            else:
+                logger.warning(f"Unknown usage structure: {vars(response.usage)}")
+        except Exception as e:
+            logger.warning(f"Error tracking OpenAI usage: {str(e)}")
+
+    return response
+
+
+def track_agent_run(result):
+    """
+    Track token usage from an Agent run result
+
+    Args:
+        result: The RunResult from an Agent run
+    """
+    # Try to get the model name from the agent for better context
+    agent_model = 'unknown'
+    try:
+        if hasattr(result, 'last_agent') and hasattr(result.last_agent, 'model'):
+            agent_model = result.last_agent.model
+            logger.info(f"Found agent model from last_agent: {agent_model}")
+        elif result.new_items:
+            for item in result.new_items:
+                if hasattr(item, 'agent') and hasattr(item.agent, 'model'):
+                    agent_model = item.agent.model
+                    logger.info(f"Found agent model from new_items: {agent_model}")
+                    break
+    except Exception as e:
+        logger.warning(f"Error extracting agent model: {str(e)}")
+
+    # Log raw_responses information
+    logger.info(f"Number of raw_responses: {len(result.raw_responses) if hasattr(result, 'raw_responses') else 0}")
+
+    # Only process actual response data with usage information
+    tracked_any = False
+    for i, response in enumerate(result.raw_responses):
+        logger.debug(f"Processing raw_response {i}, type: {type(response)}")
+
+        if hasattr(response, 'usage'):
+            # Use the model from the response if available, otherwise use the agent model
+            model = getattr(response, 'model', agent_model)
+            logger.info(f"Found model for response {i}: {model}")
+
+            # Log usage attributes
+            if hasattr(response.usage, '__dict__'):
+                logger.debug(f"Usage attributes: {response.usage.__dict__}")
+            else:
+                logger.debug(f"Usage attributes: {dir(response.usage)}")
+
+            try:
+                # Only track if we have both input and output tokens
+                if hasattr(response.usage, 'input_tokens') and hasattr(response.usage, 'output_tokens'):
+                    input_tokens = response.usage.input_tokens
+                    output_tokens = response.usage.output_tokens
+
+                    logger.info(f"Found token counts - input: {input_tokens}, output: {output_tokens}")
+
+                    # Only record if we have actual token counts
+                    if input_tokens > 0 or output_tokens > 0:
+                        track_openai_usage(model, input_tokens, output_tokens)
+                        tracked_any = True
+                        logger.info(f"Tracked usage for model {model}")
+                else:
+                    # Check for OpenAI direct API format
+                    if hasattr(response.usage, 'prompt_tokens') and hasattr(response.usage, 'completion_tokens'):
+                        input_tokens = response.usage.prompt_tokens
+                        output_tokens = response.usage.completion_tokens
+
+                        logger.info(
+                            f"Found OpenAI format token counts - prompt: {input_tokens}, completion: {output_tokens}")
+
+                        if input_tokens > 0 or output_tokens > 0:
+                            track_openai_usage(model, input_tokens, output_tokens)
+                            tracked_any = True
+                            logger.info(f"Tracked usage for model {model} (OpenAI format)")
+                    else:
+                        logger.warning(f"Response {i} has usage but missing expected token attributes")
+            except Exception as e:
+                logger.warning(f"Error extracting token usage from response {i}: {str(e)}")
+        else:
+            logger.debug(f"Response {i} has no usage attribute")
+
+    # Log if we couldn't track any actual usage
+    if tracked_any:
+        logger.info(f"Successfully tracked usage for model {agent_model}")
+    else:
+        logger.warning(f"No actual token usage data found for model {agent_model}")
 
 
 @function_tool
@@ -148,7 +281,8 @@ async def validate_job_url(url: str) -> dict:
     - reason: a brief explanation of your decision
     """
 
-    response = client.chat.completions.create(
+    response = track_openai_call(
+        client.chat.completions.create,
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are an expert at analyzing URLs to determine if they are job postings."},
@@ -248,26 +382,27 @@ async def extract_job_description(html_content: str, url: str) -> dict:
             main_content = main_content[:6000] + " ... " + main_content[-6000:]
 
         # Use AI to extract the job description
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo-16k",  # Use a model with larger context
-            messages=[
-                {"role": "system", "content": """You are an expert at extracting job information from web pages.
-                Extract the most relevant job posting details from the provided text. Focus on:
-                1. Job title
-                2. Company name
-                3. Job description
-                4. Responsibilities
-                5. Requirements
-                6. Qualifications
-
-                Format your response as coherent paragraphs containing only the job posting information.
-                Filter out navigation elements, footers, headers, and other website elements.
-                Include all relevant details about the position."""},
-                {"role": "user",
-                 "content": f"Extract the job posting information from this web page content from URL: {url}\n\n{main_content}"}
-            ],
-            temperature=0.2,  # Keep it focused on extraction
-            max_tokens=4000,  # Allow for a detailed extraction
+        response = track_openai_call(
+                client.chat.completions.create,
+                model="gpt-3.5-turbo-16k",  # Use a model with larger context
+                messages=[
+                    {"role": "system", "content": """You are an expert at extracting job information from web pages.
+                    Extract the most relevant job posting details from the provided text. Focus on:
+                    1. Job title
+                    2. Company name
+                    3. Job description
+                    4. Responsibilities
+                    5. Requirements
+                    6. Qualifications
+    
+                    Format your response as coherent paragraphs containing only the job posting information.
+                    Filter out navigation elements, footers, headers, and other website elements.
+                    Include all relevant details about the position."""},
+                    {"role": "user",
+                     "content": f"Extract the job posting information from this web page content from URL: {url}\n\n{main_content}"}
+                ],
+                temperature=0.2,  # Keep it focused on extraction
+                max_tokens=4000,  # Allow for a detailed extraction
         )
 
         job_description = response.choices[0].message.content.strip()
@@ -597,6 +732,8 @@ def analyze_job():
             context={}
         ))
 
+        track_agent_run(result)
+
         # Check if we received an error message about URL validation
         if isinstance(result.final_output, str) and any(phrase in result.final_output.lower() for phrase in
                                                       ["not a job posting", "invalid url", "not valid", "doesn't appear to be"]):
@@ -652,6 +789,8 @@ def generate_interview_questions():
             context={}
         ))
 
+        track_agent_run(result)
+
         # With output_type specified, the model should return a structured object
         if hasattr(result.final_output, "model_dump"):
             # This is a Pydantic model
@@ -685,6 +824,12 @@ def health_check():
         "status": "online",
         "message": "Backend is ready"
     }), 200
+
+
+@app.route('/metrics', methods=['GET'])
+def metrics():
+    """Expose Prometheus metrics"""
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 
 
 if __name__ == '__main__':
