@@ -7,3 +7,4 @@ gunicorn==22.0.0
 python-dotenv==1.0.0
 openai-agents
 firecrawl-py
+prometheus-client==0.16.0
