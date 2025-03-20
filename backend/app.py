@@ -474,8 +474,8 @@ preparation_tips_agent = Agent(
 
     Use web searches to find accurate and up-to-date information about interview best practices for this type of role.
     """,
-    model="gpt-4o",
-    tools=[WebSearchTool()],
+    model="gpt-4o-mini",
+    tools=[WebSearchTool(search_context_size='low')],
     output_type=PrepTipsOutput
 )
 
@@ -492,8 +492,8 @@ behavioral_questions_agent = Agent(
 
     Each question should help assess how well the candidate would fit within the company culture and succeed in the role.
     """,
-    model="gpt-4o",
-    tools=[WebSearchTool()],
+    model="gpt-4o-mini",
+    tools=[WebSearchTool(search_context_size='low')],
     output_type=BehavioralQuestionsOutput
 )
 
@@ -510,8 +510,8 @@ technical_questions_agent = Agent(
 
     Each question should test both theoretical knowledge and practical application.
     """,
-    model="gpt-4o",
-    tools=[WebSearchTool()],
+    model="gpt-4o-mini",
+    tools=[WebSearchTool(search_context_size='low')],
     output_type=TechnicalQuestionsOutput
 )
 
@@ -528,8 +528,8 @@ company_research_agent = Agent(
     Use web searches to find accurate and up-to-date information. Provide a comprehensive but concise summary that would
     help someone preparing for an interview at this company.
     """,
-    model="gpt-4o",
-    tools=[WebSearchTool()],
+    model="gpt-4o-mini",
+    tools=[WebSearchTool(search_context_size='low')],
     output_type=CompanyResearchOutput
 )
 
@@ -545,7 +545,7 @@ interview_prep_orchestrator = Agent(
 
     Your role is to initiate this process and compile the final results into a comprehensive interview preparation guide relevant to the position at the company.
     """,
-    model="gpt-4o",
+    model="gpt-4o-mini",
     tools=[
         company_research_agent.as_tool(
             tool_name="CompanyResearcher",
