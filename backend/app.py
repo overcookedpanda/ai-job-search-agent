@@ -610,7 +610,7 @@ preparation_tips_agent = Agent(
     Use web searches to find accurate and up-to-date information about interview best practices for this type of role.
     """,
     model="gpt-4o-mini",
-    tools=[WebSearchTool(search_context_size='low')],
+    tools=[WebSearchTool()],
     output_type=PrepTipsOutput
 )
 
@@ -628,7 +628,7 @@ behavioral_questions_agent = Agent(
     Each question should help assess how well the candidate would fit within the company culture and succeed in the role.
     """,
     model="gpt-4o-mini",
-    tools=[WebSearchTool(search_context_size='low')],
+    tools=[WebSearchTool()],
     output_type=BehavioralQuestionsOutput
 )
 
@@ -646,7 +646,7 @@ technical_questions_agent = Agent(
     Each question should test both theoretical knowledge and practical application.
     """,
     model="gpt-4o-mini",
-    tools=[WebSearchTool(search_context_size='low')],
+    tools=[WebSearchTool()],
     output_type=TechnicalQuestionsOutput
 )
 
@@ -664,7 +664,7 @@ company_research_agent = Agent(
     help someone preparing for an interview at this company.
     """,
     model="gpt-4o-mini",
-    tools=[WebSearchTool(search_context_size='low')],
+    tools=[WebSearchTool()],
     output_type=CompanyResearchOutput
 )
 
