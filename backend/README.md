@@ -90,3 +90,29 @@ The backend is configured for deployment on Render as a Web Service. The deploym
 - Ensure your OpenAI API key is configured as an environment variable in your production environment
 - For high traffic, consider implementing rate limiting and caching
 - Monitor API usage to control costs with the OpenAI API
+
+## Monitoring with Grafana Cloud
+
+The backend supports pushing metrics to Grafana Cloud or any Prometheus-compatible service. To enable this, set the following environment variables:
+
+- `PROMETHEUS_REMOTE_URL`: The URL for your Prometheus pushgateway (e.g., `https://<your-id>.grafana.net/api/prom/push`)
+- `PROMETHEUS_USERNAME`: Your Grafana Cloud username (typically your Grafana Cloud instance ID)
+- `PROMETHEUS_PASSWORD`: Your Grafana Cloud API key
+- `PROMETHEUS_PUSH_INTERVAL`: How often to push metrics in seconds (default: 15)
+
+### Setting up in Grafana Cloud
+
+1. Sign up for a [Grafana Cloud](https://grafana.com/products/cloud/) account if you don't have one
+2. Create an API key with the "MetricsPublisher" role
+3. Get your Prometheus pushgateway URL from your Grafana Cloud instance settings
+4. Add these environment variables to your deployment platform (Render)
+
+### Available Metrics
+
+The backend tracks the following metrics:
+
+- `api_requests_total`: Count of API requests by endpoint, method, and status code
+- `api_request_duration_seconds`: Response time histogram by endpoint and method
+- `openai_api_tokens_total`: Token usage by model and type (input/output)
+- `openai_api_cost_total`: Estimated cost of OpenAI API usage by model
+- `openai_api_calls_total`: Count of OpenAI API calls by model and endpoint

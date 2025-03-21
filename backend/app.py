@@ -1,3 +1,4 @@
+import traceback
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import asyncio
@@ -9,6 +10,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from agents import Agent, Runner, function_tool, set_tracing_export_api_key, WebSearchTool
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from prometheus_remote import RemoteWriteManager
 from metrics import track_openai_usage, init_metrics, MetricsMiddleware
 
 logging.basicConfig(level=logging.INFO,
@@ -31,6 +33,40 @@ CORS(app)
 
 
 init_metrics()
+
+# Initialize Prometheus remote write
+remote_write_url = os.environ.get('PROMETHEUS_REMOTE_URL')
+remote_write_username = os.environ.get('PROMETHEUS_USERNAME')
+remote_write_password = os.environ.get('PROMETHEUS_PASSWORD')
+environment = os.environ.get('ENVIRONMENT')
+
+# Create and start the remote write manager if URL is configured
+remote_write_manager = None
+if remote_write_url:
+    try:
+        logger.info(f"Setting up Prometheus remote write to {remote_write_url}")
+        remote_write_manager = RemoteWriteManager(
+            remote_url=remote_write_url,
+            username=remote_write_username,
+            password=remote_write_password,
+            job_name=f'ai_interview_prep-{environment}',
+            push_interval=int(os.environ.get('PROMETHEUS_PUSH_INTERVAL', '15'))
+        )
+        remote_write_manager.start()
+        logger.info(f"Started Prometheus remote write to {remote_write_url}")
+
+        # Register to stop only on application exit
+        import atexit
+
+        atexit.register(lambda: remote_write_manager.stop())
+    except Exception as e:
+        logger.error(f"Failed to initialize Prometheus remote write: {str(e)}")
+        logger.error(traceback.format_exc())
+        remote_write_manager = None
+else:
+    logger.info("Prometheus remote write not configured (PROMETHEUS_REMOTE_URL not set)")
+
+
 app.wsgi_app = MetricsMiddleware(app.wsgi_app)
 
 
