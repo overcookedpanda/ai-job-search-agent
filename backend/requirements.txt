@@ -8,3 +8,4 @@ python-dotenv==1.0.0
 openai-agents
 firecrawl-py
 prometheus-client==0.16.0
+prometheus-remote-writer==0.0.12
