@@ -1,6 +1,6 @@
 flask==2.3.3
 flask-cors==6.0.0
-requests==2.32.3
+requests==2.32.4
 beautifulsoup4==4.12.2
 openai
 gunicorn==23.0.0
