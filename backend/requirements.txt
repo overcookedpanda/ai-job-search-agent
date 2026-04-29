@@ -4,7 +4,7 @@ requests==2.33.0
 beautifulsoup4==4.12.2
 openai
 gunicorn==23.0.0
-python-dotenv==1.0.0
+python-dotenv==1.2.2
 openai-agents
 firecrawl-py
 prometheus-client==0.16.0
